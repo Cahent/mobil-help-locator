@@ -106,7 +106,12 @@ const Index = () => {
                     Transparente Preisgestaltung
                   </div>
                 </div>
-                <Button className="w-full" variant="default" size="lg">
+                <Button 
+                  className="w-full" 
+                  variant="default" 
+                  size="lg"
+                  onClick={() => window.location.href = '/auth'}
+                >
                   Pannenhilfe finden
                 </Button>
               </CardContent>
@@ -138,7 +143,12 @@ const Index = () => {
                     Einsatznavigation
                   </div>
                 </div>
-                <Button className="w-full" variant="warning" size="lg">
+                <Button 
+                  className="w-full" 
+                  variant="warning" 
+                  size="lg"
+                  onClick={() => window.location.href = '/auth'}
+                >
                   Fahrer-Portal
                 </Button>
               </CardContent>
@@ -170,7 +180,12 @@ const Index = () => {
                     Reports & Analytics
                   </div>
                 </div>
-                <Button className="w-full" variant="emergency" size="lg">
+                <Button 
+                  className="w-full" 
+                  variant="emergency" 
+                  size="lg"
+                  onClick={() => window.location.href = '/auth'}
+                >
                   Admin-Bereich
                 </Button>
               </CardContent>

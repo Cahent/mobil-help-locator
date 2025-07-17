@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-300",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
@@ -18,12 +18,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        /* Custom variants for breakdown service platform */
-        hero: "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:shadow-xl hover:scale-[1.02] transition-all duration-300 font-semibold",
-        emergency: "bg-emergency text-emergency-foreground hover:bg-emergency/90 shadow-md hover:shadow-lg transition-all duration-300 font-semibold",
-        success: "bg-success text-success-foreground hover:bg-success/90 shadow-md hover:shadow-lg transition-all duration-300",
-        warning: "bg-warning text-warning-foreground hover:bg-warning/90 shadow-md hover:shadow-lg transition-all duration-300",
-        glass: "bg-card/80 backdrop-blur-sm border border-border/50 hover:bg-card/90 transition-all duration-300",
+        warning: "bg-warning text-warning-foreground hover:bg-warning/90",
+        emergency: "bg-emergency text-emergency-foreground hover:bg-emergency/90",
       },
       size: {
         default: "h-10 px-4 py-2",

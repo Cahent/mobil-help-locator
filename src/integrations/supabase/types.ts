@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      emergency_vehicles: {
+        Row: {
+          brand: string | null
+          created_at: string
+          current_location_lat: number | null
+          current_location_lng: number | null
+          equipment: string[] | null
+          id: string
+          is_available: boolean | null
+          license_plate: string
+          model: string | null
+          service_provider_id: string
+          updated_at: string
+          vehicle_type: string
+          year: number | null
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          current_location_lat?: number | null
+          current_location_lng?: number | null
+          equipment?: string[] | null
+          id?: string
+          is_available?: boolean | null
+          license_plate: string
+          model?: string | null
+          service_provider_id: string
+          updated_at?: string
+          vehicle_type: string
+          year?: number | null
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          current_location_lat?: number | null
+          current_location_lng?: number | null
+          equipment?: string[] | null
+          id?: string
+          is_available?: boolean | null
+          license_plate?: string
+          model?: string | null
+          service_provider_id?: string
+          updated_at?: string
+          vehicle_type?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_vehicles_service_provider_id_fkey"
+            columns: ["service_provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -35,6 +91,45 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      service_providers: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          service_radius_km: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          service_radius_km?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          service_radius_km?: number | null
+          updated_at?: string
         }
         Relationships: []
       }

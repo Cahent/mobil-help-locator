@@ -106,14 +106,24 @@ const Index = () => {
                     Transparente Preisgestaltung
                   </div>
                 </div>
-                <Button 
-                  className="w-full" 
-                  variant="default" 
-                  size="lg"
-                  onClick={() => window.location.href = '/auth'}
-                >
-                  Pannenhilfe finden
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    className="w-full" 
+                    variant="default" 
+                    size="lg"
+                    onClick={() => window.location.href = '/pannendienst'}
+                  >
+                    Pannendienst suchen
+                  </Button>
+                  <Button 
+                    className="w-full" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.location.href = '/auth'}
+                  >
+                    Anmelden
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 

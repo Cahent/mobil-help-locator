@@ -24,9 +24,9 @@ const Auth = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Redirect authenticated users to home page
+        // Redirect authenticated users to dashboard
         if (session?.user) {
-          window.location.href = '/';
+          window.location.href = '/dashboard';
         }
       }
     );
@@ -38,7 +38,7 @@ const Auth = () => {
       
       // Redirect if already authenticated
       if (session?.user) {
-        window.location.href = '/';
+        window.location.href = '/dashboard';
       }
     });
 

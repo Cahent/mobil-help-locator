@@ -50,8 +50,8 @@ const Index = () => {
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Clock className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground">&lt; 15 Min</h3>
-                <p className="text-muted-foreground">Durchschnittliche Anfahrtszeit</p>
+                <h3 className="text-2xl font-bold text-foreground">&lt; 90 Min</h3>
+                <p className="text-muted-foreground">Durchschnittliche Ankunftszeit</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">

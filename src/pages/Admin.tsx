@@ -32,7 +32,16 @@ interface EmergencyVehicle {
   year: number | null;
   equipment: string[] | null;
   is_available: boolean;
+  status: string;
+  assigned_user_id: string | null;
   service_providers?: { name: string };
+  profiles?: { display_name: string | null; } | null;
+}
+
+interface User {
+  id: string;
+  email: string;
+  display_name?: string;
 }
 
 const Admin = () => {
@@ -66,8 +75,12 @@ const Admin = () => {
     model: "",
     year: new Date().getFullYear(),
     equipment: [] as string[],
-    is_available: true
+    is_available: true,
+    assigned_user_id: ""
   });
+
+  // Users state
+  const [users, setUsers] = useState<User[]>([]);
 
   const equipmentOptions = [
     "Winch", "Jump Starter", "Tire Repair Kit", "Hydraulic Jack", 
@@ -119,7 +132,7 @@ const Admin = () => {
   };
 
   const loadData = async () => {
-    await Promise.all([loadProviders(), loadVehicles()]);
+    await Promise.all([loadProviders(), loadVehicles(), loadUsers()]);
   };
 
   const loadProviders = async () => {
@@ -155,7 +168,27 @@ const Admin = () => {
         variant: "destructive"
       });
     } else {
-      setVehicles(data || []);
+      // Type casting for the complex query result
+      setVehicles(data as any[] || []);
+    }
+  };
+
+  const loadUsers = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .order("display_name", { ascending: true });
+
+    if (error) {
+      console.error("Error loading users:", error);
+    } else {
+      // Simplified user loading - just use profile data
+      const usersData = (data || []).map(profile => ({
+        id: profile.id,
+        email: profile.display_name || profile.id, // Use display_name as identifier
+        display_name: profile.display_name || "Unbenannt"
+      }));
+      setUsers(usersData);
     }
   };
 
@@ -216,7 +249,8 @@ const Admin = () => {
         model: "",
         year: new Date().getFullYear(),
         equipment: [],
-        is_available: true
+        is_available: true,
+        assigned_user_id: ""
       });
       setShowVehicleForm(false);
       loadVehicles();
@@ -539,14 +573,33 @@ const Admin = () => {
                           ))}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="available"
-                          checked={vehicleForm.is_available}
-                          onCheckedChange={(checked) => setVehicleForm(prev => ({ ...prev, is_available: checked }))}
-                        />
-                        <Label htmlFor="available">Verfügbar</Label>
-                      </div>
+                       <div className="space-y-2 md:col-span-2">
+                         <Label htmlFor="assigned_user">Pannenfahrer zuweisen</Label>
+                         <Select
+                           value={vehicleForm.assigned_user_id}
+                           onValueChange={(value) => setVehicleForm(prev => ({ ...prev, assigned_user_id: value }))}
+                         >
+                           <SelectTrigger>
+                             <SelectValue placeholder="Fahrer auswählen (optional)" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="">Kein Fahrer zugewiesen</SelectItem>
+                             {users.map((user) => (
+                               <SelectItem key={user.id} value={user.id}>
+                                 {user.display_name}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                       </div>
+                       <div className="flex items-center space-x-2">
+                         <Switch
+                           id="available"
+                           checked={vehicleForm.is_available}
+                           onCheckedChange={(checked) => setVehicleForm(prev => ({ ...prev, is_available: checked }))}
+                         />
+                         <Label htmlFor="available">Verfügbar</Label>
+                       </div>
                     </div>
                     <div className="flex gap-2">
                       <Button type="submit">Anlegen</Button>

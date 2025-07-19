@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       emergency_vehicles: {
         Row: {
+          assigned_user_id: string | null
           brand: string | null
           created_at: string
           current_location_lat: number | null
@@ -26,11 +27,13 @@ export type Database = {
           license_plate: string
           model: string | null
           service_provider_id: string
+          status: Database["public"]["Enums"]["vehicle_status"] | null
           updated_at: string
           vehicle_type: string
           year: number | null
         }
         Insert: {
+          assigned_user_id?: string | null
           brand?: string | null
           created_at?: string
           current_location_lat?: number | null
@@ -41,11 +44,13 @@ export type Database = {
           license_plate: string
           model?: string | null
           service_provider_id: string
+          status?: Database["public"]["Enums"]["vehicle_status"] | null
           updated_at?: string
           vehicle_type: string
           year?: number | null
         }
         Update: {
+          assigned_user_id?: string | null
           brand?: string | null
           created_at?: string
           current_location_lat?: number | null
@@ -56,6 +61,7 @@ export type Database = {
           license_plate?: string
           model?: string | null
           service_provider_id?: string
+          status?: Database["public"]["Enums"]["vehicle_status"] | null
           updated_at?: string
           vehicle_type?: string
           year?: number | null
@@ -169,6 +175,11 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      vehicle_status:
+        | "verfügbar"
+        | "im_einsatz"
+        | "ruhezeit"
+        | "nicht_verfügbar"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -297,6 +308,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      vehicle_status: [
+        "verfügbar",
+        "im_einsatz",
+        "ruhezeit",
+        "nicht_verfügbar",
+      ],
     },
   },
 } as const

@@ -239,9 +239,9 @@ const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
                 </div>
                 <Button 
                   className="w-full" 
-                  onClick={() => window.location.href = '/pannendienst'}
+                  onClick={() => window.location.href = '/driver'}
                 >
-                  Einsätze anzeigen
+                  Fahrzeugstatus verwalten
                 </Button>
               </CardContent>
             </Card>

@@ -180,7 +180,7 @@ const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
                 <Button 
                   className="w-full" 
                   variant="outline"
-                  onClick={() => window.location.href = '/pannendienst'}
+                  onClick={() => window.location.href = '/driver'}
                 >
                   Pannenfahrer-Dashboard
                 </Button>
@@ -262,6 +262,7 @@ const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
             </Card>
           </div>
         )}
+
 
         {userRole === 'user' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Building2, Truck, Users, CheckCircle, XCircle, Edit, Trash2 } from "lucide-react";
+import { Plus, Building2, Truck, Users, CheckCircle, XCircle, Edit, Trash2, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,7 +50,7 @@ const Admin = () => {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"providers" | "vehicles">("providers");
+  const [activeTab, setActiveTab] = useState<"providers" | "vehicles" | "users">("providers");
   
   // Service Provider state
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
@@ -84,6 +84,13 @@ const Admin = () => {
 
   // Users state
   const [users, setUsers] = useState<User[]>([]);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [userForm, setUserForm] = useState({
+    email: "",
+    password: "",
+    display_name: "",
+    role: "user" as "user" | "moderator" | "admin"
+  });
 
   const equipmentOptions = [
     "Winch", "Jump Starter", "Tire Repair Kit", "Hydraulic Jack", 
@@ -387,6 +394,54 @@ const Admin = () => {
     }
   };
 
+  const handleUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: userForm.email,
+        password: userForm.password,
+        user_metadata: {
+          display_name: userForm.display_name || userForm.email.split('@')[0]
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Add role to user_roles table
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .insert({
+            user_id: data.user.id,
+            role: userForm.role
+          });
+
+        if (roleError) throw roleError;
+
+        toast({
+          title: "Erfolg",
+          description: "Benutzer wurde erfolgreich angelegt."
+        });
+
+        setShowUserForm(false);
+        setUserForm({
+          email: "",
+          password: "",
+          display_name: "",
+          role: "user"
+        });
+        loadUsers();
+      }
+    } catch (error) {
+      console.error("User creation error:", error);
+      toast({
+        title: "Fehler",
+        description: "Benutzer konnte nicht angelegt werden.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const toggleEquipment = (equipment: string) => {
     setVehicleForm(prev => ({
       ...prev,
@@ -436,6 +491,14 @@ const Admin = () => {
           >
             <Truck className="h-4 w-4" />
             Fahrzeuge
+          </Button>
+          <Button
+            variant={activeTab === "users" ? "default" : "outline"}
+            onClick={() => setActiveTab("users")}
+            className="flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Benutzer
           </Button>
         </div>
 
@@ -869,6 +932,127 @@ const Admin = () => {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === "users" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">Benutzer ({users.length})</h2>
+              <Button
+                onClick={() => {
+                  setUserForm({
+                    email: "",
+                    password: "",
+                    display_name: "",
+                    role: "user"
+                  });
+                  setShowUserForm(!showUserForm);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Neuer Benutzer
+              </Button>
+            </div>
+
+            {showUserForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Neuen Benutzer anlegen</CardTitle>
+                  <CardDescription>
+                    Erstellen Sie ein neues Benutzerkonto für Pannenfahrer oder Administratoren
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleUserSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="user_email">E-Mail *</Label>
+                        <Input
+                          id="user_email"
+                          type="email"
+                          value={userForm.email}
+                          onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="user_password">Passwort *</Label>
+                        <Input
+                          id="user_password"
+                          type="password"
+                          value={userForm.password}
+                          onChange={(e) => setUserForm(prev => ({ ...prev, password: e.target.value }))}
+                          minLength={6}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="user_display_name">Anzeigename</Label>
+                        <Input
+                          id="user_display_name"
+                          value={userForm.display_name}
+                          onChange={(e) => setUserForm(prev => ({ ...prev, display_name: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="user_role">Rolle *</Label>
+                        <Select
+                          value={userForm.role}
+                          onValueChange={(value) => setUserForm(prev => ({ ...prev, role: value as "user" | "moderator" | "admin" }))}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Rolle auswählen" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">Kunde</SelectItem>
+                            <SelectItem value="moderator">Pannenfahrer</SelectItem>
+                            <SelectItem value="admin">Administrator</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit">
+                        Benutzer anlegen
+                      </Button>
+                      <Button type="button" variant="outline" onClick={() => setShowUserForm(false)}>
+                        Abbrechen
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="grid gap-4">
+              {users.map((user) => (
+                <Card key={user.id}>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold">{user.display_name || "Unbenannt"}</h3>
+                        <p className="text-muted-foreground">{user.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.location.href = '/driver'}
+                          className="flex items-center gap-1"
+                        >
+                          <Car className="h-4 w-4" />
+                          Fahrzeug-Dashboard
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

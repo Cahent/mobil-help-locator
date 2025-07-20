@@ -185,12 +185,14 @@ const Admin = () => {
     if (error) {
       console.error("Error loading users:", error);
     } else {
-      // Simplified user loading - just use profile data
-      const usersData = (data || []).map(profile => ({
-        id: profile.id,
-        email: profile.display_name || profile.id, // Use display_name as identifier
-        display_name: profile.display_name || "Unbenannt"
-      }));
+      // Filter out profiles with empty or null IDs and create valid user data
+      const usersData = (data || [])
+        .filter(profile => profile.id && profile.id.trim() !== "") // Filter out empty IDs
+        .map(profile => ({
+          id: profile.id,
+          email: profile.display_name || profile.id, // Use display_name as identifier
+          display_name: profile.display_name || "Unbenannt"
+        }));
       setUsers(usersData);
     }
   };

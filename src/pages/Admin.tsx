@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Building2, Truck, Users, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Building2, Truck, Users, CheckCircle, XCircle, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface ServiceProvider {
   id: string;
@@ -54,6 +55,7 @@ const Admin = () => {
   // Service Provider state
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [showProviderForm, setShowProviderForm] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<ServiceProvider | null>(null);
   const [providerForm, setProviderForm] = useState({
     name: "",
     contact_person: "",
@@ -67,6 +69,7 @@ const Admin = () => {
   // Emergency Vehicle state
   const [vehicles, setVehicles] = useState<EmergencyVehicle[]>([]);
   const [showVehicleForm, setShowVehicleForm] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<EmergencyVehicle | null>(null);
   const [vehicleForm, setVehicleForm] = useState({
     service_provider_id: "",
     license_plate: "",
@@ -195,33 +198,91 @@ const Admin = () => {
   const handleProviderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (editingProvider) {
+        const { error } = await supabase
+          .from("service_providers")
+          .update(providerForm)
+          .eq("id", editingProvider.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Erfolg",
+          description: "Dienstleister wurde erfolgreich aktualisiert."
+        });
+      } else {
+        const { error } = await supabase
+          .from("service_providers")
+          .insert(providerForm);
+
+        if (error) throw error;
+
+        toast({
+          title: "Erfolg",
+          description: "Dienstleister wurde erfolgreich angelegt."
+        });
+      }
+
+      resetProviderForm();
+      loadProviders();
+    } catch (error) {
+      console.error("Provider operation error:", error);
+      toast({
+        title: "Fehler",
+        description: `Dienstleister konnte nicht ${editingProvider ? 'aktualisiert' : 'angelegt'} werden.`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetProviderForm = () => {
+    setProviderForm({
+      name: "",
+      contact_person: "",
+      phone: "",
+      email: "",
+      address: "",
+      service_radius_km: 50,
+      is_active: true
+    });
+    setShowProviderForm(false);
+    setEditingProvider(null);
+  };
+
+  const editProvider = (provider: ServiceProvider) => {
+    setProviderForm({
+      name: provider.name,
+      contact_person: provider.contact_person || "",
+      phone: provider.phone || "",
+      email: provider.email || "",
+      address: provider.address || "",
+      service_radius_km: provider.service_radius_km,
+      is_active: provider.is_active
+    });
+    setEditingProvider(provider);
+    setShowProviderForm(true);
+  };
+
+  const deleteProvider = async (providerId: string) => {
+    try {
       const { error } = await supabase
         .from("service_providers")
-        .insert(providerForm);
+        .delete()
+        .eq("id", providerId);
 
       if (error) throw error;
 
       toast({
         title: "Erfolg",
-        description: "Dienstleister wurde erfolgreich angelegt."
+        description: "Dienstleister wurde erfolgreich gelöscht."
       });
 
-      setProviderForm({
-        name: "",
-        contact_person: "",
-        phone: "",
-        email: "",
-        address: "",
-        service_radius_km: 50,
-        is_active: true
-      });
-      setShowProviderForm(false);
       loadProviders();
     } catch (error) {
-      console.error("Provider creation error:", error);
+      console.error("Provider deletion error:", error);
       toast({
         title: "Fehler",
-        description: "Dienstleister konnte nicht angelegt werden.",
+        description: "Dienstleister konnte nicht gelöscht werden.",
         variant: "destructive"
       });
     }
@@ -230,35 +291,95 @@ const Admin = () => {
   const handleVehicleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (editingVehicle) {
+        const { error } = await supabase
+          .from("emergency_vehicles")
+          .update(vehicleForm)
+          .eq("id", editingVehicle.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Erfolg",
+          description: "Fahrzeug wurde erfolgreich aktualisiert."
+        });
+      } else {
+        const { error } = await supabase
+          .from("emergency_vehicles")
+          .insert(vehicleForm);
+
+        if (error) throw error;
+
+        toast({
+          title: "Erfolg",
+          description: "Fahrzeug wurde erfolgreich angelegt."
+        });
+      }
+
+      resetVehicleForm();
+      loadVehicles();
+    } catch (error) {
+      console.error("Vehicle operation error:", error);
+      toast({
+        title: "Fehler",
+        description: `Fahrzeug konnte nicht ${editingVehicle ? 'aktualisiert' : 'angelegt'} werden.`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetVehicleForm = () => {
+    setVehicleForm({
+      service_provider_id: "",
+      license_plate: "",
+      vehicle_type: "",
+      brand: "",
+      model: "",
+      year: new Date().getFullYear(),
+      equipment: [],
+      is_available: true,
+      assigned_user_id: ""
+    });
+    setShowVehicleForm(false);
+    setEditingVehicle(null);
+  };
+
+  const editVehicle = (vehicle: EmergencyVehicle) => {
+    setVehicleForm({
+      service_provider_id: vehicle.service_provider_id,
+      license_plate: vehicle.license_plate,
+      vehicle_type: vehicle.vehicle_type,
+      brand: vehicle.brand || "",
+      model: vehicle.model || "",
+      year: vehicle.year || new Date().getFullYear(),
+      equipment: vehicle.equipment || [],
+      is_available: vehicle.is_available,
+      assigned_user_id: vehicle.assigned_user_id || ""
+    });
+    setEditingVehicle(vehicle);
+    setShowVehicleForm(true);
+  };
+
+  const deleteVehicle = async (vehicleId: string) => {
+    try {
       const { error } = await supabase
         .from("emergency_vehicles")
-        .insert(vehicleForm);
+        .delete()
+        .eq("id", vehicleId);
 
       if (error) throw error;
 
       toast({
         title: "Erfolg",
-        description: "Fahrzeug wurde erfolgreich angelegt."
+        description: "Fahrzeug wurde erfolgreich gelöscht."
       });
 
-      setVehicleForm({
-        service_provider_id: "",
-        license_plate: "",
-        vehicle_type: "",
-        brand: "",
-        model: "",
-        year: new Date().getFullYear(),
-        equipment: [],
-        is_available: true,
-        assigned_user_id: ""
-      });
-      setShowVehicleForm(false);
       loadVehicles();
     } catch (error) {
-      console.error("Vehicle creation error:", error);
+      console.error("Vehicle deletion error:", error);
       toast({
         title: "Fehler",
-        description: "Fahrzeug konnte nicht angelegt werden.",
+        description: "Fahrzeug konnte nicht gelöscht werden.",
         variant: "destructive"
       });
     }
@@ -322,7 +443,10 @@ const Admin = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Dienstleister ({providers.length})</h2>
               <Button
-                onClick={() => setShowProviderForm(!showProviderForm)}
+                onClick={() => {
+                  resetProviderForm();
+                  setShowProviderForm(!showProviderForm);
+                }}
                 className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
@@ -333,7 +457,9 @@ const Admin = () => {
             {showProviderForm && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Neuen Dienstleister anlegen</CardTitle>
+                  <CardTitle>
+                    {editingProvider ? "Dienstleister bearbeiten" : "Neuen Dienstleister anlegen"}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleProviderSubmit} className="space-y-4">
@@ -402,8 +528,10 @@ const Admin = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button type="submit">Anlegen</Button>
-                      <Button type="button" variant="outline" onClick={() => setShowProviderForm(false)}>
+                      <Button type="submit">
+                        {editingProvider ? "Aktualisieren" : "Anlegen"}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={resetProviderForm}>
                         Abbrechen
                       </Button>
                     </div>
@@ -432,14 +560,55 @@ const Admin = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {provider.is_active ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-red-600" />
-                        )}
-                        <span className="text-sm">
-                          {provider.is_active ? "Aktiv" : "Inaktiv"}
-                        </span>
+                        <div className="flex items-center gap-2 mr-4">
+                          {provider.is_active ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          )}
+                          <span className="text-sm">
+                            {provider.is_active ? "Aktiv" : "Inaktiv"}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editProvider(provider)}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Bearbeiten
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-1 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Löschen
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Dienstleister löschen</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Sind Sie sicher, dass Sie den Dienstleister "{provider.name}" löschen möchten? 
+                                Diese Aktion kann nicht rückgängig gemacht werden.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteProvider(provider.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Löschen
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </CardContent>
@@ -455,7 +624,10 @@ const Admin = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Fahrzeuge ({vehicles.length})</h2>
               <Button
-                onClick={() => setShowVehicleForm(!showVehicleForm)}
+                onClick={() => {
+                  resetVehicleForm();
+                  setShowVehicleForm(!showVehicleForm);
+                }}
                 className="flex items-center gap-2"
                 disabled={providers.length === 0}
               >
@@ -478,7 +650,9 @@ const Admin = () => {
             {showVehicleForm && providers.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Neues Fahrzeug anlegen</CardTitle>
+                  <CardTitle>
+                    {editingVehicle ? "Fahrzeug bearbeiten" : "Neues Fahrzeug anlegen"}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleVehicleSubmit} className="space-y-4">
@@ -602,8 +776,10 @@ const Admin = () => {
                        </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button type="submit">Anlegen</Button>
-                      <Button type="button" variant="outline" onClick={() => setShowVehicleForm(false)}>
+                      <Button type="submit">
+                        {editingVehicle ? "Aktualisieren" : "Anlegen"}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={resetVehicleForm}>
                         Abbrechen
                       </Button>
                     </div>
@@ -642,14 +818,55 @@ const Admin = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {vehicle.is_available ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-red-600" />
-                        )}
-                        <span className="text-sm">
-                          {vehicle.is_available ? "Verfügbar" : "Nicht verfügbar"}
-                        </span>
+                        <div className="flex items-center gap-2 mr-4">
+                          {vehicle.is_available ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          )}
+                          <span className="text-sm">
+                            {vehicle.is_available ? "Verfügbar" : "Nicht verfügbar"}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editVehicle(vehicle)}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Bearbeiten
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-1 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Löschen
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Fahrzeug löschen</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Sind Sie sicher, dass Sie das Fahrzeug "{vehicle.license_plate}" löschen möchten? 
+                                Diese Aktion kann nicht rückgängig gemacht werden.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteVehicle(vehicle.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Löschen
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </CardContent>

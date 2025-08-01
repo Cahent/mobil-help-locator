@@ -158,6 +158,32 @@ const PannendienstSuche = () => {
     }
   };
 
+  const handleCreateBreakdownRequest = async (provider: ServiceProvider) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-breakdown-request', {
+        body: {
+          provider: provider,
+          requestDate: new Date().toISOString(),
+          requesterEmail: 'kunde@example.com' // This should come from auth user
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Beauftragung gesendet",
+        description: `Die Pannenfall-Beauftragung wurde als PDF an ${provider.email} gesendet.`,
+      });
+    } catch (error) {
+      console.error('Error creating breakdown request:', error);
+      toast({
+        title: "Fehler",
+        description: "Die Beauftragung konnte nicht gesendet werden.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -381,6 +407,14 @@ const PannendienstSuche = () => {
                           E-Mail
                         </Button>
                       )}
+                      <Button 
+                        variant="warning"
+                        onClick={() => handleCreateBreakdownRequest(provider)}
+                        className="flex items-center gap-2"
+                      >
+                        <Star className="h-4 w-4" />
+                        Pannenfall beauftragen
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

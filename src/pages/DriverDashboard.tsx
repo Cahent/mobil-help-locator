@@ -52,13 +52,18 @@ const DriverDashboard = () => {
         return;
       }
 
-      // Check if user has moderator (driver) role
-      const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
+      // Check if user has moderator (driver) or admin role
+      const { data: moderatorRole } = await supabase.rpc('has_role', {
         _user_id: session.user.id,
         _role: 'moderator'
       });
 
-      if (roleError || !roleData) {
+      const { data: adminRole } = await supabase.rpc('has_role', {
+        _user_id: session.user.id,
+        _role: 'admin'
+      });
+
+      if (!moderatorRole && !adminRole) {
         toast({
           title: "Zugriff verweigert",
           description: "Sie haben keine Pannenfahrer-Berechtigung.",

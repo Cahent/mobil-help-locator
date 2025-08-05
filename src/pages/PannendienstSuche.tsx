@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BreakdownRequestForm } from "@/components/BreakdownRequestForm";
 
 interface ServiceProvider {
   id: string;
@@ -46,6 +47,8 @@ const PannendienstSuche = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>("all");
   const [maxRadius, setMaxRadius] = useState<string>("all");
+  const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     loadProviders();
@@ -158,30 +161,9 @@ const PannendienstSuche = () => {
     }
   };
 
-  const handleCreateBreakdownRequest = async (provider: ServiceProvider) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-breakdown-request', {
-        body: {
-          provider: provider,
-          requestDate: new Date().toISOString(),
-          requesterEmail: 'kunde@example.com' // This should come from auth user
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Beauftragung gesendet",
-        description: `Die Pannenfall-Beauftragung wurde als PDF an ${provider.email} gesendet.`,
-      });
-    } catch (error) {
-      console.error('Error creating breakdown request:', error);
-      toast({
-        title: "Fehler",
-        description: "Die Beauftragung konnte nicht gesendet werden.",
-        variant: "destructive"
-      });
-    }
+  const handleCreateBreakdownRequest = (provider: ServiceProvider) => {
+    setSelectedProvider(provider);
+    setIsFormOpen(true);
   };
 
   if (loading) {
@@ -440,6 +422,18 @@ const PannendienstSuche = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Breakdown Request Form */}
+        {selectedProvider && (
+          <BreakdownRequestForm
+            provider={selectedProvider}
+            isOpen={isFormOpen}
+            onClose={() => {
+              setIsFormOpen(false);
+              setSelectedProvider(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );

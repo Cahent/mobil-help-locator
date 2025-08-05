@@ -19,46 +19,162 @@ interface BreakdownRequest {
   };
   requestDate: string;
   requesterEmail: string;
+  vehicleData?: {
+    licensePlate?: string;
+    brand?: string;
+    model?: string;
+    vehicleType?: string;
+  };
+  breakdownLocation?: {
+    address?: string;
+    coordinates?: string;
+  };
+  damageDescription?: string;
+  customerNumber?: string;
 }
 
 const createBreakdownPDF = (data: BreakdownRequest): Uint8Array => {
   const doc = new jsPDF();
+  const currentDate = new Date(data.requestDate);
   
-  // Header
-  doc.setFontSize(20);
-  doc.text("PANNENFALL BEAUFTRAGUNG", 20, 30);
+  // Header mit Logo Bereich (rechts)
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("PNEUNET", 150, 25);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Datum: ${currentDate.toLocaleDateString('de-DE')} ${currentDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} CEST`, 20, 15);
+  doc.text("Seite 1/1", 170, 15);
   
-  // Date
-  doc.setFontSize(12);
-  doc.text(`Datum: ${new Date(data.requestDate).toLocaleDateString('de-DE')}`, 20, 50);
-  doc.text(`Uhrzeit: ${new Date(data.requestDate).toLocaleTimeString('de-DE')}`, 20, 60);
+  // Zahlungszusage Header
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("Zahlungszusage", 80, 40);
+  doc.line(20, 45, 190, 45);
   
-  // Provider Info
+  let yPos = 55;
+  
+  // Auftragsnummer
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Auftragsnummer: ${Math.floor(Math.random() * 9000000) + 1000000}`, 20, yPos);
+  yPos += 15;
+  
+  // Auftrag an (Dienstleister)
+  doc.setFont("helvetica", "bold");
+  doc.text("Auftrag an:", 20, yPos);
+  doc.setFont("helvetica", "normal");
+  yPos += 8;
+  doc.text(data.provider.name, 30, yPos);
+  yPos += 6;
+  if (data.provider.address) {
+    const addressLines = data.provider.address.split(',');
+    addressLines.forEach(line => {
+      doc.text(line.trim(), 30, yPos);
+      yPos += 6;
+    });
+  }
+  yPos += 10;
+  
+  // Kunde Information
+  doc.setFont("helvetica", "bold");
+  doc.text("Kunde:", 20, yPos);
+  doc.setFont("helvetica", "normal");
+  yPos += 8;
+  doc.text("Pannendienst Portal", 30, yPos);
+  yPos += 6;
+  doc.text(data.requesterEmail, 30, yPos);
+  yPos += 15;
+  
+  // Fahrzeugdaten Sektion
+  if (data.vehicleData) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Fahrzeugdaten:", 20, yPos);
+    doc.setFont("helvetica", "normal");
+    yPos += 8;
+    
+    if (data.vehicleData.brand || data.vehicleData.model) {
+      doc.text(`Hersteller: ${data.vehicleData.brand || 'Unbekannt'}`, 30, yPos);
+      yPos += 6;
+      doc.text(`Modell: ${data.vehicleData.model || 'Unbekannt'}`, 30, yPos);
+      yPos += 6;
+    }
+    
+    if (data.vehicleData.licensePlate) {
+      doc.text(`Kennzeichen: ${data.vehicleData.licensePlate}`, 30, yPos);
+      yPos += 6;
+    }
+    
+    if (data.vehicleData.vehicleType) {
+      doc.text(`Fahrzeugart: ${data.vehicleData.vehicleType}`, 30, yPos);
+      yPos += 6;
+    }
+    yPos += 10;
+  }
+  
+  // Pannenstandort
+  if (data.breakdownLocation) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Pannenstandort:", 20, yPos);
+    doc.setFont("helvetica", "normal");
+    yPos += 8;
+    
+    if (data.breakdownLocation.address) {
+      doc.text(data.breakdownLocation.address, 30, yPos);
+      yPos += 6;
+    }
+    
+    if (data.breakdownLocation.coordinates) {
+      doc.text(`GPS: ${data.breakdownLocation.coordinates}`, 30, yPos);
+      yPos += 6;
+    }
+    yPos += 10;
+  }
+  
+  // Schadensbeschreibung
+  if (data.damageDescription) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Schaden/Beschreibung:", 20, yPos);
+    doc.setFont("helvetica", "normal");
+    yPos += 8;
+    
+    // Text umbrechen falls zu lang
+    const splitText = doc.splitTextToSize(data.damageDescription, 150);
+    doc.text(splitText, 30, yPos);
+    yPos += splitText.length * 6 + 10;
+  }
+  
+  // Autorisierter Betrag
+  yPos += 10;
+  doc.setFont("helvetica", "bold");
+  doc.text("Autorisierter Betrag:", 20, yPos);
   doc.setFontSize(14);
-  doc.text("DIENSTLEISTER:", 20, 80);
-  doc.setFontSize(12);
-  doc.text(`Firma: ${data.provider.name}`, 20, 95);
-  doc.text(`Ansprechpartner: ${data.provider.contact_person || 'N/A'}`, 20, 105);
-  doc.text(`Telefon: ${data.provider.phone || 'N/A'}`, 20, 115);
-  doc.text(`E-Mail: ${data.provider.email || 'N/A'}`, 20, 125);
-  doc.text(`Adresse: ${data.provider.address || 'N/A'}`, 20, 135);
+  doc.text("500,00 Euro exkl. MwSt", 130, yPos);
   
-  // Request Info
-  doc.setFontSize(14);
-  doc.text("AUFTRAGGEBER:", 20, 160);
-  doc.setFontSize(12);
-  doc.text(`E-Mail: ${data.requesterEmail}`, 20, 175);
+  yPos += 20;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("Bitte beachten: Diese Zahlungszusage (COP) ersetzt alle vorhergehenden!", 20, yPos);
+  yPos += 15;
   
-  // Service Details
-  doc.setFontSize(14);
-  doc.text("LEISTUNGSANFRAGE:", 20, 200);
-  doc.setFontSize(12);
-  doc.text("Hiermit beauftragen wir Sie mit der Pannenhilfe.", 20, 215);
-  doc.text("Bitte kontaktieren Sie uns umgehend zur Koordination.", 20, 225);
+  // Wichtige Hinweise
+  doc.text("Achtung: Es handelt sich bei diesem Fall um einen Pannendienst Fall.", 20, yPos);
+  yPos += 6;
+  doc.text("Bitte kontaktieren Sie umgehend den Auftraggeber zur Koordination.", 20, yPos);
+  yPos += 6;
+  doc.text("Bei Abrechnungsfragen kontaktieren Sie bitte die Zentrale.", 20, yPos);
+  yPos += 15;
+  
+  // Autorisierung
+  doc.text("Wir beauftragen und übernehmen die Zahlungszusage für diesen", 20, yPos);
+  yPos += 6;
+  doc.text("Pannenfall bis zu einem Betrag wie oben angegeben.", 20, yPos);
   
   // Footer
-  doc.text("Diese Beauftragung wurde automatisch generiert.", 20, 260);
-  doc.text(`Erstellt am: ${new Date().toLocaleString('de-DE')}`, 20, 270);
+  yPos = 270;
+  doc.setFontSize(8);
+  doc.text("24/7 Pannenhilfe - Automatisch generierte Beauftragung", 20, yPos);
+  doc.text(`Erstellt am: ${new Date().toLocaleString('de-DE')}`, 20, yPos + 6);
   
   return doc.output('arraybuffer');
 };

@@ -79,7 +79,7 @@ const Admin = () => {
     year: new Date().getFullYear(),
     equipment: [] as string[],
     is_available: true,
-    assigned_user_id: ""
+    assigned_user_id: "unassigned"
   });
 
   // Users state
@@ -302,10 +302,16 @@ const Admin = () => {
   const handleVehicleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Convert "unassigned" back to null for database storage
+      const submitData = {
+        ...vehicleForm,
+        assigned_user_id: vehicleForm.assigned_user_id === "unassigned" ? null : vehicleForm.assigned_user_id
+      };
+
       if (editingVehicle) {
         const { error } = await supabase
           .from("emergency_vehicles")
-          .update(vehicleForm)
+          .update(submitData)
           .eq("id", editingVehicle.id);
 
         if (error) throw error;
@@ -317,7 +323,7 @@ const Admin = () => {
       } else {
         const { error } = await supabase
           .from("emergency_vehicles")
-          .insert(vehicleForm);
+          .insert(submitData);
 
         if (error) throw error;
 
@@ -349,7 +355,7 @@ const Admin = () => {
       year: new Date().getFullYear(),
       equipment: [],
       is_available: true,
-      assigned_user_id: ""
+      assigned_user_id: "unassigned"
     });
     setShowVehicleForm(false);
     setEditingVehicle(null);
@@ -365,7 +371,7 @@ const Admin = () => {
       year: vehicle.year || new Date().getFullYear(),
       equipment: vehicle.equipment || [],
       is_available: vehicle.is_available,
-      assigned_user_id: vehicle.assigned_user_id || ""
+      assigned_user_id: vehicle.assigned_user_id || "unassigned"
     });
     setEditingVehicle(vehicle);
     setShowVehicleForm(true);
@@ -824,7 +830,7 @@ const Admin = () => {
                              <SelectValue placeholder="Fahrer auswählen (optional)" />
                            </SelectTrigger>
                            <SelectContent>
-                             <SelectItem value="">Kein Fahrer zugewiesen</SelectItem>
+                             <SelectItem value="unassigned">Kein Fahrer zugewiesen</SelectItem>
                              {users.map((user) => (
                                <SelectItem key={user.id} value={user.id}>
                                  {user.display_name}

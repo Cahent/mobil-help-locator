@@ -167,7 +167,8 @@ const Admin = () => {
       .from("emergency_vehicles")
       .select(`
         *,
-        service_providers (name)
+        service_providers (name),
+        profiles (display_name)
       `)
       .order("created_at", { ascending: false });
 
@@ -177,6 +178,7 @@ const Admin = () => {
         description: "Fahrzeuge konnten nicht geladen werden.",
         variant: "destructive"
       });
+      console.error("Load vehicles error:", error);
     } else {
       // Type casting for the complex query result
       setVehicles(data as any[] || []);

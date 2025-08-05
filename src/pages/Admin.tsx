@@ -43,6 +43,7 @@ interface User {
   id: string;
   email: string;
   display_name?: string;
+  role?: string;
 }
 
 const Admin = () => {
@@ -85,6 +86,7 @@ const Admin = () => {
   // Users state
   const [users, setUsers] = useState<User[]>([]);
   const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userForm, setUserForm] = useState({
     email: "",
     password: "",
@@ -194,15 +196,27 @@ const Admin = () => {
     if (error) {
       console.error("Error loading users:", error);
     } else {
-      // Filter out profiles with empty or null IDs and create valid user data
-      const usersData = (data || [])
-        .filter(profile => profile.id && profile.id.trim() !== "") // Filter out empty IDs
-        .map(profile => ({
-          id: profile.id,
-          email: profile.display_name || profile.id, // Use display_name as identifier
-          display_name: profile.display_name || "Unbenannt"
-        }));
-      setUsers(usersData);
+      // Transform the data and get role information separately
+      const usersData = await Promise.all(
+        (data || [])
+          .filter(profile => profile.id && profile.id.trim() !== "")
+          .map(async (profile) => {
+            // Get role information for each user
+            const { data: roleData } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", profile.id)
+              .single();
+
+            return {
+              id: profile.id,
+              email: profile.display_name || profile.id,
+              display_name: profile.display_name || "Unbenannt",
+              role: roleData?.role || "user"
+            };
+          })
+      );
+      setUsers(usersData as any);
     }
   };
 
@@ -405,46 +419,127 @@ const Admin = () => {
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase.auth.admin.createUser({
-        email: userForm.email,
-        password: userForm.password,
-        user_metadata: {
-          display_name: userForm.display_name || userForm.email.split('@')[0]
-        }
-      });
+      if (editingUser) {
+        // Update existing user
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({
+            display_name: userForm.display_name || userForm.email.split('@')[0]
+          })
+          .eq("id", editingUser.id);
 
-      if (error) throw error;
+        if (profileError) throw profileError;
 
-      if (data.user) {
-        // Add role to user_roles table
+        // Update user role
         const { error: roleError } = await supabase
           .from("user_roles")
-          .insert({
-            user_id: data.user.id,
-            role: userForm.role
-          });
+          .update({ role: userForm.role })
+          .eq("user_id", editingUser.id);
 
         if (roleError) throw roleError;
 
         toast({
           title: "Erfolg",
-          description: "Benutzer wurde erfolgreich angelegt."
+          description: "Benutzer wurde erfolgreich aktualisiert."
+        });
+      } else {
+        // Create new user
+        const { data, error } = await supabase.auth.admin.createUser({
+          email: userForm.email,
+          password: userForm.password,
+          user_metadata: {
+            display_name: userForm.display_name || userForm.email.split('@')[0]
+          }
         });
 
-        setShowUserForm(false);
-        setUserForm({
-          email: "",
-          password: "",
-          display_name: "",
-          role: "user"
-        });
-        loadUsers();
+        if (error) throw error;
+
+        if (data.user) {
+          // Add role to user_roles table
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .insert({
+              user_id: data.user.id,
+              role: userForm.role
+            });
+
+          if (roleError) throw roleError;
+
+          toast({
+            title: "Erfolg",
+            description: "Benutzer wurde erfolgreich angelegt."
+          });
+        }
       }
+
+      resetUserForm();
+      loadUsers();
     } catch (error) {
-      console.error("User creation error:", error);
+      console.error("User operation error:", error);
       toast({
         title: "Fehler",
-        description: "Benutzer konnte nicht angelegt werden.",
+        description: `Benutzer konnte nicht ${editingUser ? 'aktualisiert' : 'angelegt'} werden.`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetUserForm = () => {
+    setUserForm({
+      email: "",
+      password: "",
+      display_name: "",
+      role: "user"
+    });
+    setShowUserForm(false);
+    setEditingUser(null);
+  };
+
+  const editUser = (user: User) => {
+    setUserForm({
+      email: user.email,
+      password: "", // Don't pre-fill password for security
+      display_name: user.display_name || "",
+      role: (user.role as "user" | "moderator" | "admin") || "user"
+    });
+    setEditingUser(user);
+    setShowUserForm(true);
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      // First delete from user_roles
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
+      if (roleError) throw roleError;
+
+      // Then delete from profiles
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      if (profileError) throw profileError;
+
+      // Finally delete from auth.users (admin function)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (authError) throw authError;
+
+      toast({
+        title: "Erfolg",
+        description: "Benutzer wurde erfolgreich gelöscht."
+      });
+
+      loadUsers();
+    } catch (error) {
+      console.error("User deletion error:", error);
+      toast({
+        title: "Fehler",
+        description: "Benutzer konnte nicht gelöscht werden.",
         variant: "destructive"
       });
     }
@@ -956,12 +1051,7 @@ const Admin = () => {
               <h2 className="text-2xl font-semibold">Benutzer ({users.length})</h2>
               <Button
                 onClick={() => {
-                  setUserForm({
-                    email: "",
-                    password: "",
-                    display_name: "",
-                    role: "user"
-                  });
+                  resetUserForm();
                   setShowUserForm(!showUserForm);
                 }}
                 className="flex items-center gap-2"
@@ -974,9 +1064,12 @@ const Admin = () => {
             {showUserForm && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Neuen Benutzer anlegen</CardTitle>
+                  <CardTitle>{editingUser ? "Benutzer bearbeiten" : "Neuen Benutzer anlegen"}</CardTitle>
                   <CardDescription>
-                    Erstellen Sie ein neues Benutzerkonto für Pannenfahrer oder Administratoren
+                    {editingUser 
+                      ? "Bearbeiten Sie die Benutzerdaten und Rolle" 
+                      : "Erstellen Sie ein neues Benutzerkonto für Pannenfahrer oder Administratoren"
+                    }
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -989,18 +1082,20 @@ const Admin = () => {
                           type="email"
                           value={userForm.email}
                           onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
-                          required
+                          disabled={!!editingUser} // Disable email editing for existing users
+                          required={!editingUser}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="user_password">Passwort *</Label>
+                        <Label htmlFor="user_password">{editingUser ? "Neues Passwort (optional)" : "Passwort *"}</Label>
                         <Input
                           id="user_password"
                           type="password"
                           value={userForm.password}
                           onChange={(e) => setUserForm(prev => ({ ...prev, password: e.target.value }))}
                           minLength={6}
-                          required
+                          required={!editingUser}
+                          placeholder={editingUser ? "Leer lassen um beizubehalten" : ""}
                         />
                       </div>
                       <div className="space-y-2">
@@ -1031,9 +1126,9 @@ const Admin = () => {
                     </div>
                     <div className="flex gap-2">
                       <Button type="submit">
-                        Benutzer anlegen
+                        {editingUser ? "Benutzer aktualisieren" : "Benutzer anlegen"}
                       </Button>
-                      <Button type="button" variant="outline" onClick={() => setShowUserForm(false)}>
+                      <Button type="button" variant="outline" onClick={resetUserForm}>
                         Abbrechen
                       </Button>
                     </div>
@@ -1047,20 +1142,73 @@ const Admin = () => {
                 <Card key={user.id}>
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="text-lg font-semibold">{user.display_name || "Unbenannt"}</h3>
-                        <p className="text-muted-foreground">{user.email}</p>
+                        <p className="text-muted-foreground text-sm">{user.email}</p>
+                        {user.role && (
+                          <div className="mt-1">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              user.role === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                              user.role === 'moderator' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                            }`}>
+                              {user.role === 'admin' ? 'Administrator' : 
+                               user.role === 'moderator' ? 'Pannenfahrer' : 'Kunde'}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.location.href = '/driver'}
+                          onClick={() => editUser(user)}
                           className="flex items-center gap-1"
                         >
-                          <Car className="h-4 w-4" />
-                          Fahrzeug-Dashboard
+                          <Edit className="h-4 w-4" />
+                          Bearbeiten
                         </Button>
+                        {user.role === 'moderator' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.location.href = '/driver'}
+                            className="flex items-center gap-1"
+                          >
+                            <Car className="h-4 w-4" />
+                            Fahrzeug-Dashboard
+                          </Button>
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-1 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Löschen
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Benutzer löschen</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Sind Sie sicher, dass Sie den Benutzer "{user.display_name || user.email}" löschen möchten? 
+                                Diese Aktion kann nicht rückgängig gemacht werden.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteUser(user.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Löschen
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </CardContent>

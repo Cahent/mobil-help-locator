@@ -16,6 +16,7 @@ interface VehicleStatus {
   model: string | null;
   status: 'verfügbar' | 'im_einsatz' | 'ruhezeit' | 'nicht_verfügbar';
   service_providers?: { name: string };
+  profiles?: { display_name: string | null };
 }
 
 const statusLabels = {
@@ -37,7 +38,10 @@ const DriverDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isDriver, setIsDriver] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [assignedVehicle, setAssignedVehicle] = useState<VehicleStatus | null>(null);
+  const [allVehicles, setAllVehicles] = useState<VehicleStatus[]>([]);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleStatus | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
@@ -74,7 +78,13 @@ const DriverDashboard = () => {
       }
 
       setIsDriver(true);
-      await loadAssignedVehicle(session.user.id);
+      setIsAdmin(!!adminRole);
+      
+      if (adminRole) {
+        await loadAllVehicles();
+      } else {
+        await loadAssignedVehicle(session.user.id);
+      }
     } catch (error) {
       console.error("Driver access check error:", error);
       navigate("/");
@@ -110,19 +120,78 @@ const DriverDashboard = () => {
     }
   };
 
+  const loadAllVehicles = async () => {
+    const { data, error } = await supabase
+      .from("emergency_vehicles")
+      .select(`
+        id,
+        license_plate,
+        vehicle_type,
+        brand,
+        model,
+        status,
+        assigned_user_id,
+        service_providers (name)
+      `)
+      .order('license_plate');
+
+    if (error) {
+      console.error("Error loading all vehicles:", error);
+      toast({
+        title: "Fehler",
+        description: "Fahrzeugdaten konnten nicht geladen werden.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (data) {
+      // Load driver information for each vehicle
+      const vehiclesWithDrivers = await Promise.all(
+        data.map(async (vehicle) => {
+          let driverName = null;
+          if (vehicle.assigned_user_id) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("display_name")
+              .eq("id", vehicle.assigned_user_id)
+              .single();
+            driverName = profile?.display_name || null;
+          }
+          
+          return {
+            ...vehicle,
+            profiles: driverName ? { display_name: driverName } : undefined
+          } as VehicleStatus;
+        })
+      );
+
+      setAllVehicles(vehiclesWithDrivers);
+      if (vehiclesWithDrivers.length > 0) {
+        setSelectedVehicle(vehiclesWithDrivers[0]);
+      }
+    }
+  };
+
   const updateVehicleStatus = async (newStatus: string) => {
-    if (!assignedVehicle) return;
+    const targetVehicle = isAdmin ? selectedVehicle : assignedVehicle;
+    if (!targetVehicle) return;
 
     setUpdatingStatus(true);
     try {
       const { error } = await supabase
         .from("emergency_vehicles")
         .update({ status: newStatus as 'verfügbar' | 'im_einsatz' | 'ruhezeit' | 'nicht_verfügbar' })
-        .eq('id', assignedVehicle.id);
+        .eq('id', targetVehicle.id);
 
       if (error) throw error;
 
-      setAssignedVehicle(prev => prev ? { ...prev, status: newStatus as 'verfügbar' | 'im_einsatz' | 'ruhezeit' | 'nicht_verfügbar' } : null);
+      if (isAdmin) {
+        setSelectedVehicle(prev => prev ? { ...prev, status: newStatus as 'verfügbar' | 'im_einsatz' | 'ruhezeit' | 'nicht_verfügbar' } : null);
+        setAllVehicles(prev => prev.map(v => v.id === targetVehicle.id ? { ...v, status: newStatus as 'verfügbar' | 'im_einsatz' | 'ruhezeit' | 'nicht_verfügbar' } : v));
+      } else {
+        setAssignedVehicle(prev => prev ? { ...prev, status: newStatus as 'verfügbar' | 'im_einsatz' | 'ruhezeit' | 'nicht_verfügbar' } : null);
+      }
       
       toast({
         title: "Status aktualisiert",
@@ -184,9 +253,9 @@ const DriverDashboard = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+              <Badge variant="outline" className={isAdmin ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-warning/10 text-warning border-warning/20"}>
                 <Car className="w-4 h-4 mr-1" />
-                Pannenfahrer
+                {isAdmin ? "Administrator" : "Pannenfahrer"}
               </Badge>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-4 h-4 mr-2" />
@@ -204,11 +273,239 @@ const DriverDashboard = () => {
             Fahrzeugstatus Management
           </h2>
           <p className="text-muted-foreground">
-            Verwalten Sie die Verfügbarkeit Ihres zugewiesenen Fahrzeugs
+            {isAdmin ? "Verwalten Sie die Verfügbarkeit aller Fahrzeuge" : "Verwalten Sie die Verfügbarkeit Ihres zugewiesenen Fahrzeugs"}
           </p>
         </div>
 
-        {!assignedVehicle ? (
+        {isAdmin ? (
+          // Admin view - show all vehicles
+          allVehicles.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Car className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-xl font-semibold mb-2">Keine Fahrzeuge vorhanden</h3>
+                <p className="text-muted-foreground mb-4">
+                  Es sind noch keine Fahrzeuge im System registriert.
+                </p>
+                <Button variant="outline" onClick={() => navigate('/admin')}>
+                  Zur Administration
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {/* Vehicle Selection */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Fahrzeug auswählen</CardTitle>
+                  <CardDescription>
+                    Wählen Sie ein Fahrzeug aus, um dessen Status zu verwalten
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={selectedVehicle?.id || ""}
+                    onValueChange={(vehicleId) => {
+                      const vehicle = allVehicles.find(v => v.id === vehicleId);
+                      setSelectedVehicle(vehicle || null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Fahrzeug auswählen..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allVehicles.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{vehicle.license_plate} - {vehicle.vehicle_type}</span>
+                            <Badge 
+                              variant="outline" 
+                              className={`ml-2 text-xs ${statusColors[vehicle.status]}`}
+                            >
+                              {statusLabels[vehicle.status]}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+
+              {selectedVehicle && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Vehicle Info Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Car className="w-5 h-5 mr-2 text-primary" />
+                        Fahrzeuginformationen
+                      </CardTitle>
+                      <CardDescription>
+                        Details zum ausgewählten Fahrzeug
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Kennzeichen:</span>
+                          <span className="text-lg font-bold">{selectedVehicle.license_plate}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Fahrzeugtyp:</span>
+                          <span>{selectedVehicle.vehicle_type}</span>
+                        </div>
+                        {selectedVehicle.brand && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">Marke:</span>
+                            <span>{selectedVehicle.brand} {selectedVehicle.model}</span>
+                          </div>
+                        )}
+                        {selectedVehicle.service_providers && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">Dienstleister:</span>
+                            <span>{selectedVehicle.service_providers.name}</span>
+                          </div>
+                        )}
+                        {selectedVehicle.profiles && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">Zugewiesener Fahrer:</span>
+                            <span>{selectedVehicle.profiles.display_name || "Nicht zugewiesen"}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Status Management Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <CheckCircle className="w-5 h-5 mr-2 text-success" />
+                        Status Management
+                      </CardTitle>
+                      <CardDescription>
+                        Aktueller Status und Verfügbarkeit ändern
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                        <span className="text-sm font-medium">Aktueller Status:</span>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-sm px-3 py-1 ${statusColors[selectedVehicle.status]}`}
+                        >
+                          {statusLabels[selectedVehicle.status]}
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-2">
+                        <span className="text-sm font-medium">Status ändern:</span>
+                        <Select
+                          value={selectedVehicle.status}
+                          onValueChange={updateVehicleStatus}
+                          disabled={updatingStatus}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="verfügbar">
+                              <div className="flex items-center">
+                                <div className="w-2 h-2 bg-success rounded-full mr-2"></div>
+                                Verfügbar
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="im_einsatz">
+                              <div className="flex items-center">
+                                <div className="w-2 h-2 bg-warning rounded-full mr-2"></div>
+                                Im Einsatz
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="ruhezeit">
+                              <div className="flex items-center">
+                                <div className="w-2 h-2 bg-info rounded-full mr-2"></div>
+                                Ruhezeit
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="nicht_verfügbar">
+                              <div className="flex items-center">
+                                <div className="w-2 h-2 bg-destructive rounded-full mr-2"></div>
+                                Nicht verfügbar
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {updatingStatus && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-primary mr-2"></div>
+                          Status wird aktualisiert...
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Quick Actions Card */}
+                  <Card className="lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Clock className="w-5 h-5 mr-2 text-info" />
+                        Schnellaktionen
+                      </CardTitle>
+                      <CardDescription>
+                        Häufig verwendete Statusänderungen
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Button
+                          variant="outline"
+                          className="h-20 flex-col gap-2"
+                          onClick={() => updateVehicleStatus('verfügbar')}
+                          disabled={updatingStatus || selectedVehicle.status === 'verfügbar'}
+                        >
+                          <div className="w-3 h-3 bg-success rounded-full"></div>
+                          <span className="text-sm">Verfügbar</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="h-20 flex-col gap-2"
+                          onClick={() => updateVehicleStatus('im_einsatz')}
+                          disabled={updatingStatus || selectedVehicle.status === 'im_einsatz'}
+                        >
+                          <div className="w-3 h-3 bg-warning rounded-full"></div>
+                          <span className="text-sm">Im Einsatz</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="h-20 flex-col gap-2"
+                          onClick={() => updateVehicleStatus('ruhezeit')}
+                          disabled={updatingStatus || selectedVehicle.status === 'ruhezeit'}
+                        >
+                          <div className="w-3 h-3 bg-info rounded-full"></div>
+                          <span className="text-sm">Ruhezeit</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="h-20 flex-col gap-2"
+                          onClick={() => updateVehicleStatus('nicht_verfügbar')}
+                          disabled={updatingStatus || selectedVehicle.status === 'nicht_verfügbar'}
+                        >
+                          <div className="w-3 h-3 bg-destructive rounded-full"></div>
+                          <span className="text-sm">Nicht verfügbar</span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          )
+        ) : (
+          // Driver view - show assigned vehicle only
+          !assignedVehicle ? (
           <Card>
             <CardContent className="p-8 text-center">
               <Car className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
@@ -383,7 +680,7 @@ const DriverDashboard = () => {
               </CardContent>
             </Card>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

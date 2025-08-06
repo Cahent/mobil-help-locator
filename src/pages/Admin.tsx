@@ -190,8 +190,8 @@ const Admin = () => {
   const loadUsers = async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, display_name")
-      .order("display_name", { ascending: true });
+      .select("id, username, display_name")
+      .order("username", { ascending: true });
 
     if (error) {
       console.error("Error loading users:", error);
@@ -210,8 +210,8 @@ const Admin = () => {
 
             return {
               id: profile.id,
-              email: profile.display_name || profile.id,
-              display_name: profile.display_name || "Unbenannt",
+              email: profile.username || profile.display_name || profile.id,
+              display_name: profile.display_name || profile.username || "Unbenannt",
               role: roleData?.role || "user"
             };
           })

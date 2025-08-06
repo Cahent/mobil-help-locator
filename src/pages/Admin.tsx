@@ -169,12 +169,12 @@ const Admin = () => {
       .from("emergency_vehicles")
       .select(`
         *,
-        service_providers (name),
-        profiles (display_name)
+        service_providers (name)
       `)
       .order("created_at", { ascending: false });
 
     if (error) {
+      console.error("Load vehicles error:", error);
       toast({
         title: "Fehler",
         description: "Fahrzeuge konnten nicht geladen werden.",

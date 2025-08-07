@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Building2, Truck, Users, CheckCircle, XCircle, Edit, Trash2, Car } from "lucide-react";
+import { Plus, Building2, Truck, Users, CheckCircle, XCircle, Edit, Trash2, Car, Key } from "lucide-react";
+import { LicenseKeyManagement } from "@/components/LicenseKeyManagement";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,7 +52,7 @@ const Admin = () => {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"providers" | "vehicles" | "users">("providers");
+  const [activeTab, setActiveTab] = useState<"providers" | "vehicles" | "users" | "licenses">("providers");
   
   // Service Provider state
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
@@ -602,6 +603,14 @@ const Admin = () => {
           >
             <Users className="h-4 w-4" />
             Benutzer
+          </Button>
+          <Button
+            variant={activeTab === "licenses" ? "default" : "outline"}
+            onClick={() => setActiveTab("licenses")}
+            className="flex items-center gap-2"
+          >
+            <Key className="h-4 w-4" />
+            Lizenzen
           </Button>
         </div>
 
@@ -1217,6 +1226,9 @@ const Admin = () => {
             </div>
           </div>
         )}
+
+        {/* Licenses Tab */}
+        {activeTab === "licenses" && <LicenseKeyManagement />}
       </div>
     </div>
   );

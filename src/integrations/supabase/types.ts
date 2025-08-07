@@ -76,6 +76,51 @@ export type Database = {
           },
         ]
       }
+      license_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_users: number | null
+          description: string | null
+          expires_at: string | null
+          features: Json | null
+          id: string
+          is_active: boolean
+          license_key: string
+          max_users: number | null
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_users?: number | null
+          description?: string | null
+          expires_at?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          license_key: string
+          max_users?: number | null
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_users?: number | null
+          description?: string | null
+          expires_at?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          license_key?: string
+          max_users?: number | null
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -165,6 +210,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_license_key: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       has_role: {
         Args: {
           _user_id: string

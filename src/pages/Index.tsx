@@ -12,12 +12,14 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                <Car className="w-6 h-6 text-primary-foreground" />
-              </div>
+              <img 
+                src="/lovable-uploads/6bd3f13b-1827-43f9-b2a2-ab7b49dae1f6.png" 
+                alt="PannenPro Logo" 
+                className="w-12 h-12 object-contain"
+              />
               <div>
-                <h1 className="text-xl font-bold text-foreground">PannenService</h1>
-                <p className="text-sm text-muted-foreground">Professionelle Pannenhilfe</p>
+                <h1 className="text-xl font-bold text-foreground">PannenPro</h1>
+                <p className="text-sm text-muted-foreground">Pannen Digital Disponieren</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">

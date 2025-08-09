@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Building2, Truck, Users, CheckCircle, XCircle, Edit, Trash2, Car, Key } from "lucide-react";
+import { Plus, Building2, Truck, Users, CheckCircle, XCircle, Edit, Trash2, Car, Key, RefreshCw } from "lucide-react";
 import { LicenseKeyManagement } from "@/components/LicenseKeyManagement";
+import UpdateManagement from "@/components/UpdateManagement";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,7 +53,7 @@ const Admin = () => {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"providers" | "vehicles" | "users" | "licenses">("providers");
+  const [activeTab, setActiveTab] = useState<"providers" | "vehicles" | "users" | "licenses" | "updates">("providers");
   
   // Service Provider state
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
@@ -611,6 +612,14 @@ const Admin = () => {
           >
             <Key className="h-4 w-4" />
             Lizenzen
+          </Button>
+          <Button
+            variant={activeTab === "updates" ? "default" : "outline"}
+            onClick={() => setActiveTab("updates")}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Updates
           </Button>
         </div>
 
@@ -1229,6 +1238,9 @@ const Admin = () => {
 
         {/* Licenses Tab */}
         {activeTab === "licenses" && <LicenseKeyManagement />}
+
+        {/* Updates Tab */}
+        {activeTab === "updates" && <UpdateManagement />}
       </div>
     </div>
   );

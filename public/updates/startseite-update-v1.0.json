@@ -1,0 +1,40 @@
+{
+  "updateInfo": {
+    "title": "PannenPro Startseite Update",
+    "version": "1.0.0",
+    "description": "Neue Unternehmens-Informationsseite für PannenPro mit Logo, Projektinfos und System-Features",
+    "date": "2025-01-10",
+    "type": "frontend_update"
+  },
+  "changes": {
+    "pages": {
+      "Index.tsx": {
+        "description": "Komplette Überarbeitung der Startseite als PannenPro Informationsseite",
+        "features": [
+          "PannenPro Logo Integration",
+          "Unternehmens-Informationen",
+          "System-Features Übersicht",
+          "Projekt-Timeline",
+          "Lizenzmodell-Informationen",
+          "Kundenlogin-Button"
+        ]
+      }
+    },
+    "assets": {
+      "pannenpro-logo.png": {
+        "description": "PannenPro Firmenlogo",
+        "path": "/lovable-uploads/4c71f37e-b150-46f2-967a-353362c58930.png"
+      }
+    }
+  },
+  "systemRequirements": {
+    "minVersion": "1.0.0",
+    "dependencies": [],
+    "compatibility": "all"
+  },
+  "installation": {
+    "backup": true,
+    "restartRequired": false,
+    "estimatedTime": "2 minutes"
+  }
+}

@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      customers: {
+        Row: {
+          address_city: string
+          address_country: string
+          address_postal_code: string
+          address_street: string
+          business_type: string | null
+          commercial_register: string | null
+          company_name: string
+          contact_person: string
+          created_at: string
+          credit_limit: number | null
+          email: string
+          emergency_contact_phone: string | null
+          fleet_size: number | null
+          id: string
+          is_active: boolean | null
+          mobile_phone: string | null
+          notes: string | null
+          payment_terms: string | null
+          phone: string
+          preferred_service_radius: number | null
+          tax_number: string | null
+          updated_at: string
+          user_id: string
+          vat_number: string | null
+        }
+        Insert: {
+          address_city: string
+          address_country?: string
+          address_postal_code: string
+          address_street: string
+          business_type?: string | null
+          commercial_register?: string | null
+          company_name: string
+          contact_person: string
+          created_at?: string
+          credit_limit?: number | null
+          email: string
+          emergency_contact_phone?: string | null
+          fleet_size?: number | null
+          id?: string
+          is_active?: boolean | null
+          mobile_phone?: string | null
+          notes?: string | null
+          payment_terms?: string | null
+          phone: string
+          preferred_service_radius?: number | null
+          tax_number?: string | null
+          updated_at?: string
+          user_id: string
+          vat_number?: string | null
+        }
+        Update: {
+          address_city?: string
+          address_country?: string
+          address_postal_code?: string
+          address_street?: string
+          business_type?: string | null
+          commercial_register?: string | null
+          company_name?: string
+          contact_person?: string
+          created_at?: string
+          credit_limit?: number | null
+          email?: string
+          emergency_contact_phone?: string | null
+          fleet_size?: number | null
+          id?: string
+          is_active?: boolean | null
+          mobile_phone?: string | null
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string
+          preferred_service_radius?: number | null
+          tax_number?: string | null
+          updated_at?: string
+          user_id?: string
+          vat_number?: string | null
+        }
+        Relationships: []
+      }
       emergency_vehicles: {
         Row: {
           assigned_user_id: string | null

@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Shield, Car, Users, LogOut } from 'lucide-react';
+import { Shield, Car, Users, LogOut, Building2 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import CustomerManagement from './CustomerManagement';
 
 type UserRole = Database['public']['Enums']['app_role'];
 
@@ -17,6 +18,7 @@ interface RoleBasedDashboardProps {
 const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<string>('dashboard');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -119,6 +121,11 @@ const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              {activeSection !== 'dashboard' && userRole === 'user' && (
+                <Button variant="outline" size="sm" onClick={() => setActiveSection('dashboard')}>
+                  Dashboard
+                </Button>
+              )}
               <Badge variant="outline" className={`bg-${getRoleColor()}/10 text-${getRoleColor()} border-${getRoleColor()}/20`}>
                 {getRoleIcon()}
                 <span className="ml-1">{getRoleLabel()}</span>
@@ -265,54 +272,96 @@ const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
 
 
         {userRole === 'user' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="w-5 h-5 mr-2 text-primary" />
-                  Pannendienst suchen
-                </CardTitle>
-                <CardDescription>
-                  Finden Sie schnell verfügbare Pannendienstleister
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-success rounded-full mr-2"></div>
-                    Sofortige Verfügbarkeitssuche
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-success rounded-full mr-2"></div>
-                    Echtzeit-Standortverfolgung
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-success rounded-full mr-2"></div>
-                    Transparente Preisgestaltung
-                  </div>
-                </div>
-                <Button 
-                  className="w-full" 
-                  onClick={() => window.location.href = '/pannendienst'}
-                >
-                  Pannendienst suchen
-                </Button>
-              </CardContent>
-            </Card>
+          <div>
+            {activeSection === 'dashboard' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="w-5 h-5 mr-2 text-primary" />
+                      Pannendienst suchen
+                    </CardTitle>
+                    <CardDescription>
+                      Finden Sie schnell verfügbare Pannendienstleister
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-success rounded-full mr-2"></div>
+                        Sofortige Verfügbarkeitssuche
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-success rounded-full mr-2"></div>
+                        Echtzeit-Standortverfolgung
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-success rounded-full mr-2"></div>
+                        Transparente Preisgestaltung
+                      </div>
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => window.location.href = '/pannendienst'}
+                    >
+                      Pannendienst suchen
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Meine Anfragen</CardTitle>
-                <CardDescription>
-                  Übersicht Ihrer bisherigen Pannenanfragen
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  Noch keine Anfragen vorhanden.
-                </p>
-              </CardContent>
-            </Card>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveSection('customers')}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Building2 className="w-5 h-5 mr-2 text-accent" />
+                      Kundenverwaltung
+                    </CardTitle>
+                    <CardDescription>
+                      Verwalten Sie Ihre Kunden für Pannenfälle
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-accent rounded-full mr-2"></div>
+                        Speditions-Kundenstamm
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-accent rounded-full mr-2"></div>
+                        Vollständige Kontaktdaten
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-accent rounded-full mr-2"></div>
+                        Pannen-Abwicklung
+                      </div>
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                    >
+                      Kunden verwalten
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Meine Anfragen</CardTitle>
+                    <CardDescription>
+                      Übersicht Ihrer bisherigen Pannenanfragen
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground text-sm">
+                      Noch keine Anfragen vorhanden.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeSection === 'customers' && (
+              <CustomerManagement user={user} />
+            )}
           </div>
         )}
       </div>

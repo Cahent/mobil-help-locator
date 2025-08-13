@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Shield, Car, Users, LogOut, Building2 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
-import CustomerManagement from './CustomerManagement';
 
 type UserRole = Database['public']['Enums']['app_role'];
 
@@ -371,7 +370,20 @@ const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
             )}
 
             {activeSection === 'customers' && (
-              <CustomerManagement user={user} />
+              <div className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        Kundenverwaltung
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Die Kundenverwaltung wird hier implementiert.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         )}

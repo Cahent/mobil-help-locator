@@ -97,11 +97,22 @@ const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
   const getRoleColor = () => {
     switch (userRole) {
       case 'admin':
-        return 'emergency';
+        return 'default';
       case 'moderator':
-        return 'warning';
+        return 'secondary';
       default:
-        return 'primary';
+        return 'outline';
+    }
+  };
+
+  const getRoleBadgeClass = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'bg-emergency/10 text-emergency border-emergency/20';
+      case 'moderator':
+        return 'bg-warning/10 text-warning border-warning/20';
+      default:
+        return 'bg-primary/10 text-primary border-primary/20';
     }
   };
 
@@ -126,7 +137,7 @@ const RoleBasedDashboard = ({ user }: RoleBasedDashboardProps) => {
                   Dashboard
                 </Button>
               )}
-              <Badge variant="outline" className={`bg-${getRoleColor()}/10 text-${getRoleColor()} border-${getRoleColor()}/20`}>
+              <Badge variant="outline" className={getRoleBadgeClass()}>
                 {getRoleIcon()}
                 <span className="ml-1">{getRoleLabel()}</span>
               </Badge>

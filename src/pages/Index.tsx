@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Shield, Truck, Phone } from 'lucide-react';
 
 const Index = () => {
@@ -9,7 +9,7 @@ const Index = () => {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold mb-4 text-primary">
             PannenPro
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
@@ -19,7 +19,6 @@ const Index = () => {
             <Button 
               size="lg" 
               onClick={() => window.location.href = '/auth'}
-              className="bg-primary hover:bg-primary/90"
             >
               Anmelden
             </Button>

@@ -16,7 +16,6 @@ import {
   Truck,
   AlertCircle
 } from 'lucide-react';
-import { CustomerForm } from './CustomerForm';
 import { useToast } from '@/hooks/use-toast';
 
 interface Customer {
@@ -46,8 +45,6 @@ interface CustomerManagementProps {
 const CustomerManagement: React.FC<CustomerManagementProps> = ({ user }) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -101,31 +98,11 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ user }) => {
     }
   };
 
-  const handleFormSuccess = () => {
-    setShowForm(false);
-    setEditingCustomer(null);
-    fetchCustomers();
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
-    );
-  }
-
-  if (showForm || editingCustomer) {
-    return (
-      <CustomerForm
-        user={user}
-        customer={editingCustomer}
-        onSuccess={handleFormSuccess}
-        onCancel={() => {
-          setShowForm(false);
-          setEditingCustomer(null);
-        }}
-      />
     );
   }
 
@@ -138,7 +115,7 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ user }) => {
             Verwalten Sie Ihre Kunden für Pannenfälle
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
+        <Button className="flex items-center gap-2">
           <Plus className="w-4 h-4" />
           Neuer Kunde
         </Button>
@@ -154,7 +131,7 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ user }) => {
             <p className="text-muted-foreground text-center mb-6">
               Legen Sie Ihren ersten Kunden an, um Pannenfälle zu verwalten.
             </p>
-            <Button onClick={() => setShowForm(true)}>
+            <Button>
               <Plus className="w-4 h-4 mr-2" />
               Ersten Kunden anlegen
             </Button>
@@ -204,7 +181,6 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ user }) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setEditingCustomer(customer)}
                     className="flex-1"
                   >
                     <Edit className="w-4 h-4 mr-2" />

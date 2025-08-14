@@ -7,13 +7,13 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   base: "./",
   build: {
-    outDir: "psm",
+    outDir: "httpdocs",
     assetsDir: "assets",
     sourcemap: false,
     minify: "esbuild",
   },
   server: {
-    host: "http://213.165.83.193:8080/",
+    host: "::",
     port: 8080,
     watch: {
       usePolling: false,

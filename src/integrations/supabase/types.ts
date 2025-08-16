@@ -155,6 +155,13 @@ export type Database = {
             referencedRelation: "service_providers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "emergency_vehicles_service_provider_id_fkey"
+            columns: ["service_provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       license_keys: {
@@ -288,7 +295,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      service_providers_public: {
+        Row: {
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          service_area: string | null
+          service_radius_km: number | null
+        }
+        Insert: {
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          service_area?: never
+          service_radius_km?: number | null
+        }
+        Update: {
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          service_area?: never
+          service_radius_km?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_license_key: {

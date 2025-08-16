@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Server, Cloud, Users, MapPin, Shield, Calendar, CheckCircle, ArrowRight } from 'lucide-react';
 
 const Index = () => {
+  console.log('Index component rendering...');
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       {/* Header */}
